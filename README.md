@@ -1,175 +1,96 @@
-# Movie_Recommendation_System-
-Movie Recommendation System
-A content-based movie recommendation system that suggests similar movies based on genre and plot descriptions using TF-IDF vectorization and cosine similarity.
+🎬 Movie Recommendation Engine using Cosine Similarity
+===
+📌 Project Overview
 
-📋 Table of Contents
-Overview
+This project builds a content-based recommendation system for movies using TF-IDF vectorization and cosine similarity.
+The system suggests similar movies based on their genre and one-line descriptions.
 
-Features
+It can:
 
-How It Works
+Recommend movies similar to a given title
 
-Installation
+Filter recommendations by genre
 
-Usage
+Handle missing values, duplicates, and noisy text
 
-Data Requirements
+Provide similarity scores for each recommendation
+===
+⚙️ Technologies Used
 
-Algorithm Details
+Python 3.x
 
-Results
+Libraries: Pandas, NumPy, Scikit-learn, Regular Expressions (re)
+===
+📂 Dataset
 
-Customization
+The dataset used in this project contains 9,999 movie entries with the following key columns:
 
-Limitations
+MOVIES → Title of the movie
 
-Future Improvements
+GENRE → Genre(s) of the movie
 
-🎬 Overview
-This recommendation system uses content-based filtering to suggest movies similar to a user's selection. By analyzing movie genres and plot descriptions, the system identifies patterns and similarities between films to provide personalized recommendations.
+ONE-LINE → Short plot description
 
-✨ Features
-Content-Based Filtering: Recommends movies based on similarity of content rather than user ratings
+After cleaning, the dataset has:
 
-Genre Filtering: Option to filter recommendations by specific genres
+9,072 movies
 
-Similarity Scoring: Shows how closely each recommendation matches the selected movie
+510 unique genres  
+===
+🛠️ Project Workflow
+1️⃣ Data Loading & Cleaning
 
-Error Handling: Provides helpful suggestions when movie titles aren't found
+Load the dataset
 
-Data Cleaning: Automated preprocessing of movie data
+Drop missing values and duplicates
 
-🔧 How It Works
-The system follows these steps:
+Clean text: lowercase conversion, special character removal, whitespace handling
 
-Data Loading: Reads movie data from a CSV file
+2️⃣ Feature Engineering
 
-Preprocessing: Cleans text data and handles missing values
+Combine genre and one-line description into a new column content
 
-Feature Engineering: Combines genre and plot descriptions into a single content feature
+Apply TF-IDF Vectorization with parameters to optimize vocabulary size and context
 
-Vectorization: Converts text to numerical features using TF-IDF
+3️⃣ Similarity Calculation
 
-Similarity Calculation: Computes cosine similarity between all movies
+Compute cosine similarity across all movies
 
-Recommendation Generation: Finds the most similar movies to the user's selection
+Store results in a similarity matrix
 
-📥 Installation
-Prerequisites
-Python 3.7+
+4️⃣ Recommendation Engine
 
-Required libraries: pandas, numpy, scikit-learn
+Input: Movie title
 
-Setup
-Clone or download the project files
+Output: Top N recommended movies with similarity scores
 
-Install required packages:
+Optional: Filter recommendations by genre
 
-bash
-pip install pandas numpy scikit-learn
-Prepare your movie dataset in CSV format (see Data Requirements below)
+===
+🎯 Example Output
 
-🚀 Usage
-Basic Implementation
-python
-# Import the recommendation function
-from movie_recommender import recommend_movies
+Input Movie: Blood Red Sky
+Genre Filter: Horror
 
-# Get recommendations for a movie
-recommendations = recommend_movies("blood red sky", n=5)
+MOVIES	GENRE	Similarity Score
+Flight	Drama, Horror, Sci-Fi	0.276
+The Bad Batch	Action, Horror, Mystery	0.180
+▶️ How to Run
 
-# Get genre-specific recommendations
-horror_recommendations = recommend_movies("blood red sky", n=5, genre_filter="horror")
-Command Line Usage
-Run the script directly:
+Clone this repository
 
-bash
-python movie_recommender.py
-The system will process the data and provide recommendations for the test movie.
+Install dependencies from the requirements file
 
-📊 Data Requirements
-Your CSV file should include at least these columns:
+Place the dataset (movies.csv) inside the project folder
 
-MOVIES: Movie titles
+Run the script to generate recommendations
 
-GENRE: Genre information (comma-separated)
+Test the recommendation system with any movie title
 
-ONE-LINE: Brief plot descriptions
+📌 Key Features
 
-Example Data Structure
-MOVIES	GENRE	ONE-LINE
-Blood Red Sky	Action, Horror, Thriller	A woman with a mysterious illness is forced...
-The Walking Dead	Drama, Horror, Thriller	Sheriff Deputy Rick Grimes wakes up from a...
-🧠 Algorithm Details
-TF-IDF Vectorization
-Term Frequency-Inverse Document Frequency (TF-IDF) is used to convert text data into numerical vectors that represent the importance of words in the context of the entire dataset.
-
-Parameters used:
-
-stop_words="english": Removes common English words
-
-max_df=0.7: Ignores terms that appear in more than 70% of documents
-
-min_df=2: Ignores terms that appear in fewer than 2 documents
-
-ngram_range=(1, 2): Considers both single words and word pairs
-
-max_features=10000: Limits the number of features for efficiency
-
-Cosine Similarity
-Cosine similarity measures the cosine of the angle between two vectors in a multi-dimensional space. It's particularly effective for text similarity as it focuses on the direction rather than the magnitude of vectors.
-
-Formula:
-
-text
-cosine_similarity(A, B) = (A · B) / (||A|| * ||B||)
-📈 Results
-The system successfully processes movie data and provides recommendations with similarity scores. For example:
-
-Input: "blood red sky" (Action, Horror, Thriller)
-
-Output:
-
-text
-MOVIES             GENRE                     SIMILARITY_SCORE
-flight             drama horror scifi        0.276
-the bad batch      action horror mystery     0.180
-🛠 Customization
-Adjusting Recommendation Parameters
-You can modify the TF-IDF parameters in the code:
-
-python
-vectorizer = TfidfVectorizer(
-    stop_words="english",
-    max_df=0.7,        # Adjust to control common word filtering
-    min_df=2,          # Adjust to control rare word filtering
-    ngram_range=(1, 2),# Change to (1, 1) for only single words
-    max_features=10000 # Increase for larger datasets
-)
-Adding New Features
-To incorporate additional movie features:
-
-python
-# Add additional features to the content
-⚠️ Limitations
-Cold Start Problem: Cannot recommend movies without sufficient content data
-
-Content Dependency: Relies on accurate genre and plot information
-
-Overspecialization: May recommend very similar movies without diversity
-
-Text Quality: Performance depends on the quality of plot descriptions
-
-🔮 Future Improvements
-Potential enhancements for the system:
-
-Hybrid Approach: Combine with collaborative filtering for better recommendations
-
-Sentiment Analysis: Incorporate review sentiment into recommendations
-
-Deep Learning: Use neural networks for more sophisticated feature extraction
-
-User Interface: Develop a web or mobile app for easier interaction
-
-Real-time Updates: Implement streaming data processing for new movies
-Network URL: http://10.203.161.243:8501
+✅ Handles missing values and duplicates
+✅ Cleans noisy text and standardizes format
+✅ Uses TF-IDF + Cosine Similarity for recommendations
+✅ Genre-based filtering available
+✅ Easily extendable to other datasets
