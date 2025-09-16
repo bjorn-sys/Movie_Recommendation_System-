@@ -90,3 +90,6 @@ The Bad Batch	Action, Horror, Mystery	0.180
 ✅ Uses TF-IDF + Cosine Similarity for recommendations
 ✅ Genre-based filtering available
 ✅ Easily extendable to other datasets
+
+
+Network URL: http://10.203.161.243:8501
