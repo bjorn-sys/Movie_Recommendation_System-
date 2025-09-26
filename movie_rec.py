@@ -1,126 +1,106 @@
-# ================================================================
-# MOVIE RECOMMENDER STREAMLIT APP
-# ================================================================
+# ========================================================================
+# Movie Recommendation System using TF-IDF + Cosine Similarity
+# Dataset Columns: MOVIES | YEAR | GENRE | RATING | ONE-LINE | STARS | VOTES | RunTime | Gross
+# ========================================================================
 
-# -----------------
-# 1. IMPORT LIBRARIES
-# -----------------
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
-# -----------------
-# 2. LOAD DATA
-# -----------------
-# Replace with your dataset path
-df = pd.read_csv("movies.csv")       # must have columns: MOVIES, GENRE, DESCRIPTION
-df = df.dropna(subset=['MOVIES', 'DESCRIPTION'])
+# -----------------------------------------------------------------------------
+# 1. Load and preprocess data
+# -----------------------------------------------------------------------------
+@st.cache_data
+def load_data():
+    df = pd.read_csv("movies.csv")   # <-- replace with your actual file name/path
+    
+    # Rename columns to standard names
+    df = df.rename(columns={
+        "MOVIES": "title",
+        "GENRE": "genres",
+        "ONE-LINE": "overview"
+    })
+    
+    # Fill missing values
+    df["genres"] = df["genres"].fillna("")
+    df["overview"] = df["overview"].fillna("")
+    
+    # Combine text features for TF-IDF
+    df["combined_features"] = df["genres"] + " " + df["overview"]
+    
+    # TF-IDF vectorization
+    tfidf = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = tfidf.fit_transform(df["combined_features"])
+    
+    # Cosine similarity
+    cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+    
+    # Map titles to index
+    indices = pd.Series(df.index, index=df["title"]).drop_duplicates()
+    
+    return df, cosine_sim, indices
 
-# -----------------
-# 3. CREATE FEATURES AND COSINE SIMILARITY MATRIX
-# -----------------
-tfidf = TfidfVectorizer(stop_words='english')
-tfidf_matrix = tfidf.fit_transform(df['DESCRIPTION'])
-
-cosine_sim = cosine_similarity(tfidf_matrix)   # (num_movies x num_movies)
-
-# Map movie titles to their indices
-indices = pd.Series(df.index, index=df['MOVIES']).drop_duplicates()
-
-# -----------------
-# 4. SESSION STATE INITIALIZATION
-# -----------------
-if "get_recs" not in st.session_state:
-    st.session_state.get_recs = False
-
-if "selected_movie" not in st.session_state:
-    st.session_state.selected_movie = None
-
-if "selected_genre" not in st.session_state:
-    st.session_state.selected_genre = None
-
-if "num_recs" not in st.session_state:
-    st.session_state.num_recs = 5
-
-# -----------------
-# 5. RECOMMENDATION FUNCTION
-# -----------------
-def recommend_movies(movie_title, n=5, genre_filter=None):
-    # Check if the movie exists
-    if movie_title not in indices:
-        similar_titles = [title for title in indices.index if movie_title.lower() in title.lower()]
+# -----------------------------------------------------------------------------
+# 2. Recommendation Function
+# -----------------------------------------------------------------------------
+def recommend_movies(title, n=5, genre_filter=None):
+    if title not in indices:
+        similar_titles = [t for t in indices.index if title.lower() in t.lower()]
         if similar_titles:
-            return f"❗ Movie '{movie_title}' not found. Did you mean: {', '.join(similar_titles[:3])}?"
+            return f"❗ Movie '{title}' not found. Did you mean: {', '.join(similar_titles[:3])}?"
         else:
-            return f"❗ Movie '{movie_title}' not found in dataset!"
-
-    # Get index of the selected movie
-    idx = indices[movie_title]
-
-    # Compute similarity scores
-    sim_scores = list(enumerate(cosine_sim[idx].flatten()))
-
-    # Sort movies by similarity score
-    sim_scores = sorted(sim_scores, key=lambda x: float(x[1]), reverse=True)
-
-    # Take top n+5 (skip the movie itself)
+            return f"❗ Movie '{title}' not found in the dataset."
+    
+    idx = indices[title]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    
+    # Skip the first one (itself)
     sim_scores = sim_scores[1:n+6]
-
-    # Extract movie indices
+    
     movie_indices = [i[0] for i in sim_scores]
     similarity_values = [i[1] for i in sim_scores]
-
-    # Create recommendations DataFrame
-    recommendations = df[['MOVIES', 'GENRE']].iloc[movie_indices].copy()
-    recommendations['Similarity_Score'] = similarity_values
-
-    # Apply genre filter if provided
+    
+    recommendations = df[["title", "genres", "YEAR", "RATING"]].iloc[movie_indices].copy()
+    recommendations["Similarity_Score"] = similarity_values
+    
     if genre_filter:
         recommendations = recommendations[
-            recommendations['GENRE'].str.lower().str.contains(genre_filter.lower())
+            recommendations["genres"].str.lower().str.contains(genre_filter.lower())
         ]
-
+    
     return recommendations.head(n)
 
-# -----------------
-# 6. STREAMLIT UI
-# -----------------
-st.title("🎬 Movie Recommendation App")
-st.markdown("Find movies similar to your favorites!")
+# -----------------------------------------------------------------------------
+# 3. Streamlit App UI
+# -----------------------------------------------------------------------------
+st.set_page_config(page_title="Movie Recommendation System", layout="wide")
 
-# Movie selection
-st.session_state.selected_movie = st.selectbox(
-    "Select or type a movie title:",
-    df['MOVIES'].unique()
-)
+st.title("🎬 Movie Recommendation System")
+st.markdown("Get similar movie suggestions based on your favorite movie!")
 
-# Genre filter (optional)
-st.session_state.selected_genre = st.text_input("Optional: Filter by genre (e.g., Action, Comedy):")
+# Load data
+df, cosine_sim, indices = load_data()
 
-# Number of recommendations
-st.session_state.num_recs = st.slider(
-    "Number of recommendations:",
-    min_value=1,
-    max_value=20,
-    value=5
-)
+# Sidebar
+st.sidebar.header("🔎 Find Recommendations")
+movie_list = df["title"].tolist()
+selected_movie = st.sidebar.selectbox("Select a movie you like:", movie_list)
 
-# Recommendation button
-if st.button("🔎 Get Recommendations"):
-    st.session_state.get_recs = True
+genre_option = st.sidebar.text_input("Optional: Filter by genre (e.g., Action, Comedy)")
+n_recommend = st.sidebar.slider("Number of recommendations:", 1, 20, 5)
 
-# Display results
-if st.session_state.get_recs:
-    results = recommend_movies(
-        st.session_state.selected_movie,
-        st.session_state.num_recs,
-        st.session_state.selected_genre
-    )
-
-    if isinstance(results, str):  # if error message
+# Recommend Button
+if st.sidebar.button("Recommend"):
+    results = recommend_movies(selected_movie, n_recommend, genre_option)
+    
+    if isinstance(results, str):
         st.warning(results)
     else:
-        st.success("✅ Recommendations:")
-        st.dataframe(results, use_container_width=True)
+        st.success(f"✅ Here are your top {len(results)} recommendations similar to **{selected_movie}**:")
+        st.dataframe(results.reset_index(drop=True))
+
+# Show raw data
+with st.expander("📂 View Dataset"):
+    st.write(df.head(20))
